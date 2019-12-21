@@ -500,58 +500,6 @@ var Chess = function(fen) {
     return legal_moves;
   }
 
-  /* convert a move from 0x88 coordinates to Standard Algebraic Notation
-   * (SAN)
-   *
-   * @param {boolean} sloppy Use the sloppy SAN generator to work around over
-   * disambiguation bugs in Fritz and Chessbase.  See below:
-   *
-   * r1bqkbnr/ppp2ppp/2n5/1B1pP3/4P3/8/PPPP2PP/RNBQK1NR b KQkq - 2 4
-   * 4. ... Nge7 is overly disambiguated because the knight on c6 is pinned
-   * 4. ... Ne7 is technically the valid SAN
-   */
-  function move_to_san(move, sloppy) {
-
-    var output = '';
-
-    if (move.flags & BITS.KSIDE_CASTLE) {
-      output = 'O-O';
-    } else if (move.flags & BITS.QSIDE_CASTLE) {
-      output = 'O-O-O';
-    } else {
-      var disambiguator = get_disambiguator(move, sloppy);
-
-      if (move.piece !== PAWN) {
-        output += move.piece.toUpperCase() + disambiguator;
-      }
-
-      if (move.flags & (BITS.CAPTURE | BITS.EP_CAPTURE)) {
-        if (move.piece === PAWN) {
-          output += algebraic(move.from)[0];
-        }
-        output += 'x';
-      }
-
-      output += algebraic(move.to);
-
-      if (move.flags & BITS.PROMOTION) {
-        output += '=' + move.promotion.toUpperCase();
-      }
-    }
-
-    make_move(move);
-    if (in_check()) {
-      if (in_checkmate()) {
-        output += '#';
-      } else {
-        output += '+';
-      }
-    }
-    undo_move();
-
-    return output;
-  }
-
   function attacked(color, square) {
     for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
       /* did we run off the end of the board */
