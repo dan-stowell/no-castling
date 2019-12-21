@@ -552,11 +552,6 @@ var Chess = function(fen) {
     return output;
   }
 
-  // parses all of the decorators out of a SAN string
-  function stripped_san(move) {
-    return move.replace(/=/,'').replace(/[+#]?[?!]*$/,'');
-  }
-
   function attacked(color, square) {
     for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
       /* did we run off the end of the board */
@@ -898,45 +893,6 @@ var Chess = function(fen) {
     return '';
   }
 
-  // convert a move from Standard Algebraic Notation (SAN) to 0x88 coordinates
-  function move_from_san(move, sloppy) {
-    // strip off any move decorations: e.g Nf3+?!
-    var clean_move = stripped_san(move);
-
-    // if we're using the sloppy parser run a regex to grab piece, to, and from
-    // this should parse invalid SAN like: Pe2-e4, Rc1c4, Qf3xf7
-    if (sloppy) {
-      var matches = clean_move.match(/([pnbrqkPNBRQK])?([a-h][1-8])x?-?([a-h][1-8])([qrbnQRBN])?/);
-      if (matches) {
-        var piece = matches[1];
-        var from = matches[2];
-        var to = matches[3];
-        var promotion = matches[4];
-      }
-    }
-
-    var moves = generate_moves();
-    for (var i = 0, len = moves.length; i < len; i++) {
-      // try the strict parser first, then the sloppy parser if requested
-      // by the user
-      if ((clean_move === stripped_san(move_to_san(moves[i]))) ||
-          (sloppy && clean_move === stripped_san(move_to_san(moves[i], true)))) {
-        return moves[i];
-      } else {
-        if (matches &&
-            (!piece || piece.toLowerCase() == moves[i].piece) &&
-            SQUARES[from] == moves[i].from &&
-            SQUARES[to] == moves[i].to &&
-            (!promotion || promotion.toLowerCase() == moves[i].promotion)) {
-          return moves[i];
-        }
-      }
-    }
-
-    return null;
-  }
-
-
   /*****************************************************************************
    * UTILITY FUNCTIONS
    ****************************************************************************/
@@ -964,7 +920,6 @@ var Chess = function(fen) {
   /* pretty = external move object */
   function make_pretty(ugly_move) {
     var move = clone(ugly_move);
-    move.san = move_to_san(move, false);
     move.to = algebraic(move.to);
     move.from = algebraic(move.from);
 
@@ -1072,16 +1027,7 @@ var Chess = function(fen) {
       var moves = [];
 
       for (var i = 0, len = ugly_moves.length; i < len; i++) {
-
-        /* does the user want a full move object (most likely not), or just
-         * SAN
-         */
-        if (typeof options !== 'undefined' && 'verbose' in options &&
-            options.verbose) {
-          moves.push(make_pretty(ugly_moves[i]));
-        } else {
-          moves.push(move_to_san(ugly_moves[i], false));
-        }
+        moves.push(make_pretty(ugly_moves[i]));
       }
 
       return moves;
@@ -1151,21 +1097,16 @@ var Chess = function(fen) {
                     options.sloppy : false;
 
       var move_obj = null;
+      var moves = generate_moves();
 
-      if (typeof move === 'string') {
-        move_obj = move_from_san(move, sloppy);
-      } else if (typeof move === 'object') {
-        var moves = generate_moves();
-
-        /* convert the pretty move object to an ugly move object */
-        for (var i = 0, len = moves.length; i < len; i++) {
-          if (move.from === algebraic(moves[i].from) &&
-              move.to === algebraic(moves[i].to) &&
-              (!('promotion' in moves[i]) ||
-              move.promotion === moves[i].promotion)) {
-            move_obj = moves[i];
-            break;
-          }
+      /* convert the pretty move object to an ugly move object */
+      for (var i = 0, len = moves.length; i < len; i++) {
+        if (move.from === algebraic(moves[i].from) &&
+            move.to === algebraic(moves[i].to) &&
+            (!('promotion' in moves[i]) ||
+            move.promotion === moves[i].promotion)) {
+          move_obj = moves[i];
+          break;
         }
       }
 
@@ -1217,29 +1158,6 @@ var Chess = function(fen) {
 
       return null;
     },
-
-    history: function(options) {
-      var reversed_history = [];
-      var move_history = [];
-      var verbose = (typeof options !== 'undefined' && 'verbose' in options &&
-                     options.verbose);
-
-      while (history.length > 0) {
-        reversed_history.push(undo_move());
-      }
-
-      while (reversed_history.length > 0) {
-        var move = reversed_history.pop();
-        if (verbose) {
-          move_history.push(make_pretty(move));
-        } else {
-          move_history.push(move_to_san(move));
-        }
-        make_move(move);
-      }
-
-      return move_history;
-    }
 
   };
 };
