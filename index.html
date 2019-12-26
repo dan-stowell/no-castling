@@ -8,7 +8,7 @@
 </head>
 <body>
 <!--- Begin Example HTML ------------------------------------------------------>
-<div id="myBoard" style="width: 400px"></div>
+<div id="myBoard" style="width: 90vw"></div>
 <!--- End Example HTML -------------------------------------------------------->
 
 <script src="js/jquery-3.4.1.min.js"></script>
@@ -72,5 +72,10 @@ var config = {
 board = Chessboard('myBoard', config)
 // --- End Example JS ----------------------------------------------------------
 </script>
+<style>
+  body {
+    touch-action: none;
+  }
+</style>
 </body>
 </html>
